@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Bus Tracking - Kolkata</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .map-container {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        
+        .passenger-info {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .passenger-info h3 {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .route-info {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .route-dn18 { border-left-color: #e74c3c; }
+        .route-l238 { border-left-color: #3498db; }
+        .route-s15 { border-left-color: #2ecc71; }
+        
+        .route-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .route-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .eta {
+            background: linear-gradient(45deg, #FFA726, #FF9800);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .bus-status {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .stops-info {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .legend h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .simulation-running {
+            background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulsing {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚌 Real-Time Bus Tracking - Kolkata</h1>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="startSimulation()">Start Simulation</button>
+            <button class="btn btn-danger" onclick="stopSimulation()">Stop Simulation</button>
+            <button class="btn btn-secondary" onclick="resetSimulation()">Reset</button>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="status-indicator" id="statusIndicator">Simulation Stopped</div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="passenger-info">
+                <h3>👤 Passenger View</h3>
+                <p><strong>Location:</strong> Park Street Metro</p>
+                <p><strong>Destination:</strong> Howrah Station</p>
+                <p><strong>Preferred Routes:</strong> DN18, L238</p>
+            </div>
+            
+            <div class="legend">
+                <h4>Route Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Route DN18 (Howrah - Salt Lake)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>Route L238 (Sealdah - Garia)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Route S15 (Esplanade - Airport)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FF6B6B;"></div>
+                    <span>👤 Passenger Location</span>
+                </div>
+            </div>
+            
+            <div id="routeInfo">
+                <!-- Route information will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Kolkata
+        const map = L.map('map').setView([22.5726, 88.3639], 14);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Bus routes data with realistic Kolkata locations
+        const routes = {
+            DN18: {
+                name: 'DN18',
+                color: '#e74c3c',
+                path: [
+                    [22.5958, 88.2636], // Howrah Station
+                    [22.5744, 88.3126], // Park Street
+                    [22.5675, 88.3364], // Esplanade
+                    [22.5726, 88.3639], // Central Kolkata
+                    [22.5896, 88.4030], // Salt Lake
+                ],
+                stops: ['Howrah Station', 'Park Street', 'Esplanade', 'Central Kolkata', 'Salt Lake']
+            },
+            L238: {
+                name: 'L238',
+                color: '#3498db',
+                path: [
+                    [22.5675, 88.3364], // Sealdah
+                    [22.5726, 88.3639], // Central
+                    [22.5568, 88.3826], // Ballygunge
+                    [22.4707, 88.3962], // Garia
+                ],
+                stops: ['Sealdah', 'Central', 'Ballygunge', 'Garia']
+            },
+            S15: {
+                name: 'S15',
+                color: '#2ecc71',
+                path: [
+                    [22.5675, 88.3364], // Esplanade
+                    [22.5726, 88.3639], // Central
+                    [22.5957, 88.4044], // Bidhannagar
+                    [22.6540, 88.4473], // Airport
+                ],
+                stops: ['Esplanade', 'Central', 'Bidhannagar', 'Airport']
+            }
+        };
+        
+        // Passenger location (Park Street Metro)
+        const passengerLocation = [22.5744, 88.3126];
+        let passengerMarker;
+        
+        // Bus markers and polylines
+        let busMarkers = {};
+        let routeLines = {};
+        let simulationInterval;
+        let isSimulating = false;
+        
+        // Bus positions (initially at start of routes)
+        let busPositions = {
+            DN18: { index: 0, progress: 0, direction: 1 },
+            L238: { index: 0, progress: 0, direction: 1 },
+            S15: { index: 0, progress: 0, direction: 1 }
+        };
+        
+        // Custom icons
+        const busIcon = (color) => L.divIcon({
+            html: `<div style="background: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">🚌</div>`,
+            iconSize: [20, 20],
+            className: 'custom-bus-icon'
+        });
+        
+        const passengerIcon = L.divIcon({
+            html: '<div style="background: #FF6B6B; width: 25px; height: 25px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">👤</div>',
+            iconSize: [25, 25],
+            className: 'custom-passenger-icon pulsing'
+        });
+        
+        // Initialize map elements
+        function initializeMap() {
+            // Add passenger marker
+            passengerMarker = L.marker(passengerLocation, { icon: passengerIcon })
+                .addTo(map)
+                .bindPopup('<b>Passenger Location</b><br>Park Street Metro<br>Waiting for: DN18, L238');
+            
+            // Add route lines and bus markers
+            Object.keys(routes).forEach(routeId => {
+                const route = routes[routeId];
+                
+                // Add route line
+                routeLines[routeId] = L.polyline(route.path, {
+                    color: route.color,
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(map).bindPopup(`Route ${route.name}`);
+                
+                // Add bus marker
+                busMarkers[routeId] = L.marker(route.path[0], { icon: busIcon(route.color) })
+                    .addTo(map)
+                    .bindPopup(`Bus ${route.name}<br>Status: At ${route.stops[0]}`);
+            });
+            
+            updateRouteInfo();
+        }
+        
+        // Calculate distance between two points
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Calculate ETA based on current bus position and passenger location
+        function calculateETA(routeId) {
+            const route = routes[routeId];
+            const busPos = busPositions[routeId];
+            const currentLatLng = getCurrentBusPosition(routeId);
+            
+            // Find the closest stop to passenger
+            let minDistance = Infinity;
+            let closestStopIndex = 0;
+            
+            route.path.forEach((point, index) => {
+                const distance = calculateDistance(passengerLocation[0], passengerLocation[1], point[0], point[1]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestStopIndex = index;
+                }
+            });
+            
+            // Calculate approximate time based on distance and speed
+            const distanceToBus = calculateDistance(
+                currentLatLng.lat, currentLatLng.lng,
+                route.path[closestStopIndex][0], route.path[closestStopIndex][1]
+            );
+            
+            // Simulate realistic ETA (3-15 minutes based on distance)
+            const baseTime = Math.max(3, Math.min(15, distanceToBus * 8));
+            const eta = Math.round(baseTime + Math.random() * 3); // Add some randomness
+            
+            return eta;
+        }
+        
+        // Get current bus position based on progress
+        function getCurrentBusPosition(routeId) {
+            const route = routes[routeId];
+            const busPos = busPositions[routeId];
+            
+            if (busPos.index >= route.path.length - 1) {
+                return { lat: route.path[route.path.length - 1][0], lng: route.path[route.path.length - 1][1] };
+            }
+            
+            const start = route.path[busPos.index];
+            const end = route.path[busPos.index + 1];
+            
+            const lat = start[0] + (end[0] - start[0]) * busPos.progress;
+            const lng = start[1] + (end[1] - start[1]) * busPos.progress;
+            
+            return { lat, lng };
+        }
+        
+        // Update bus positions
+        function updateBusPositions() {
+            Object.keys(busPositions).forEach(routeId => {
+                const route = routes[routeId];
+                const busPos = busPositions[routeId];
+                
+                // Move bus along the route
+                busPos.progress += 0.02 * busPos.direction;
+                
+                if (busPos.progress >= 1) {
+                    busPos.progress = 0;
+                    busPos.index += busPos.direction;
+                    
+                    if (busPos.index >= route.path.length - 1) {
+                        busPos.direction = -1; // Reverse direction
+                    } else if (busPos.index <= 0) {
+                        busPos.direction = 1; // Forward direction
+                    }
+                }
+                
+                // Update marker position
+                const currentPos = getCurrentBusPosition(routeId);
+                busMarkers[routeId].setLatLng([currentPos.lat, currentPos.lng]);
+                
+                // Update popup content
+                const currentStopIndex = Math.round(busPos.index);
+                const currentStop = route.stops[Math.min(currentStopIndex, route.stops.length - 1)];
+                busMarkers[routeId].getPopup().setContent(`Bus ${route.name}<br>Status: Near ${currentStop}<br>Direction: ${busPos.direction > 0 ? 'Forward' : 'Return'}`);
+            });
+            
+            updateRouteInfo();
+        }
+        
+        // Update route information in sidebar
+        function updateRouteInfo() {
+            const routeInfoContainer = document.getElementById('routeInfo');
+            let html = '';
+            
+            Object.keys(routes).forEach(routeId => {
+                const route = routes[routeId];
+                const eta = isSimulating ? calculateETA(routeId) : '--';
+                const busPos = busPositions[routeId];
+                const currentStopIndex = Math.round(busPos.index);
+                const currentStop = route.stops[Math.min(currentStopIndex, route.stops.length - 1)];
+                
+                html += `
+                    <div class="route-info route-${routeId.toLowerCase()}">
+                        <div class="route-header">
+                            <span class="route-name">${route.name}</span>
+                            <span class="eta">${eta} min</span>
+                        </div>
+                        <div class="bus-status">🚌 Near: ${currentStop}</div>
+                        <div class="bus-status">Direction: ${busPos.direction > 0 ? 'Forward Route' : 'Return Route'}</div>
+                        <div class="stops-info">Stops: ${route.stops.join(' → ')}</div>
+                    </div>
+                `;
+            });
+            
+            routeInfoContainer.innerHTML = html;
+        }
+        
+        // Start simulation
+        function startSimulation() {
+            if (isSimulating) return;
+            
+            isSimulating = true;
+            document.getElementById('statusIndicator').textContent = 'Simulation Running';
+            document.getElementById('statusIndicator').className = 'status-indicator simulation-running';
+            
+            simulationInterval = setInterval(updateBusPositions, 1000);
+        }
+        
+        // Stop simulation
+        function stopSimulation() {
+            if (!isSimulating) return;
+            
+            isSimulating = false;
+            document.getElementById('statusIndicator').textContent = 'Simulation Stopped';
+            document.getElementById('statusIndicator').className = 'status-indicator';
+            
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+            }
+        }
+        
+        // Reset simulation
+        function resetSimulation() {
+            stopSimulation();
+            
+            // Reset bus positions
+            busPositions = {
+                DN18: { index: 0, progress: 0, direction: 1 },
+                L238: { index: 0, progress: 0, direction: 1 },
+                S15: { index: 0, progress: 0, direction: 1 }
+            };
+            
+            // Reset bus markers to start positions
+            Object.keys(routes).forEach(routeId => {
+                const route = routes[routeId];
+                busMarkers[routeId].setLatLng(route.path[0]);
+                busMarkers[routeId].getPopup().setContent(`Bus ${route.name}<br>Status: At ${route.stops[0]}`);
+            });
+            
+            updateRouteInfo();
+        }
+        
+        // Initialize the map when page loads
+        initializeMap();
+    </script>
+</body>
+</html>
