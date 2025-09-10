@@ -1046,6 +1046,13 @@ body {
     background: none !important;
     border: none !important;
 }
+.logo {
+  width: 40px;        /* same as w-10 */
+  height: 40px;       /* same as h-10 */
+  border-radius: 50%; /* same as rounded-full */
+  margin-right: 8px;  /* same as mr-2 */
+  object-fit: cover;  /* makes sure the image scales nicely */
+}
 
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
