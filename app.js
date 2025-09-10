@@ -87,9 +87,9 @@ const destinationIcon = L.divIcon({
 // Initialize map elements
 function initializeMap() {
     // Add passenger marker
-    passengerMarker = L.marker(passengerLocation, { icon: passengerIcon })
-        .addTo(map)
-        .bindPopup('<b>Your Location</b><br>Park Street Metro Station<br>Waiting for bus to Central Kolkata');
+    // passengerMarker = L.marker(passengerLocation, { icon: passengerIcon })
+    //     .addTo(map)
+    //     .bindPopup('<b>Your Location</b><br>Park Street Metro Station<br>Waiting for bus to Central Kolkata');
         
     // Add destination marker
     destinationMarker = L.marker(destinationLocation, { icon: destinationIcon })
@@ -266,9 +266,9 @@ function startSimulation() {
     if (isSimulating) return;
     
     isSimulating = true;
-    const statusIndicator = document.getElementById('statusIndicator');
-    statusIndicator.innerHTML = '<i data-lucide="play-circle" width="18" height="18"></i> Simulation Running';
-    statusIndicator.className = 'status-indicator simulation-running';
+    // const statusIndicator = document.getElementById('statusIndicator');
+    // statusIndicator.innerHTML = '<i data-lucide="play-circle" width="18" height="18"></i> Simulation Running';
+    // statusIndicator.className = 'status-indicator simulation-running';
     
     lucide.createIcons();
     simulationInterval = setInterval(updateBusPositions, 1000);
@@ -279,9 +279,9 @@ function stopSimulation() {
     if (!isSimulating) return;
     
     isSimulating = false;
-    const statusIndicator = document.getElementById('statusIndicator');
-    statusIndicator.innerHTML = '<i data-lucide="pause-circle" width="18" height="18"></i> Simulation Stopped';
-    statusIndicator.className = 'status-indicator';
+    // const statusIndicator = document.getElementById('statusIndicator');
+    // statusIndicator.innerHTML = '<i data-lucide="pause-circle" width="18" height="18"></i> Simulation Stopped';
+    // statusIndicator.className = 'status-indicator';
     
     lucide.createIcons();
     if (simulationInterval) {
